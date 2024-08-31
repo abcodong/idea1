@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>아이디어 공유</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            padding: 20px;
+            background-color: #f7f8fa;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+
+        #input-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 600px;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        input[type="text"],
+        textarea {
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            width: 100%;
+            background-color: #ecf0f1;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            transition: box-shadow 0.3s ease, transform 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus {
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            outline: none;
+            transform: translateY(-2px);
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            background-color: #2980b9;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        #idea-list {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            width: 100%;
+            max-width: 1000px;
+            margin-top: 20px;
+        }
+
+        .idea-card {
+            border: none;
+            padding: 20px;
+            border-radius: 15px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .idea-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .idea-card h3 {
+            margin: 0 0 10px;
+            font-size: 20px;
+            color: #34495e;
+        }
+
+        .idea-card p {
+            font-size: 16px;
+            color: #7f8c8d;
+            line-height: 1.5;
+        }
+
+        .idea-card .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #b0b0b0;
+        }
+
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+            width: 80%;
+            max-width: 500px;
+        }
+
+        .popup h3 {
+            margin-top: 0;
+        }
+
+        .popup button {
+            margin-top: 20px;
+        }
+
+        .popup-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+
+        .popup-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 5;
+        }
+
+        .like-button {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            color: #e74c3c;
+        }
+
+        .like-button i {
+            margin-right: 5px;
+        }
+
+        .like-button span {
+            font-size: 16px;
+            color: #e74c3c;
+        }
+
+        .like-button.disabled {
+            cursor: not-allowed;
+            color: #b0b0b0;
+        }
+
+        @media (max-width: 768px) {
+            #idea-list {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            #idea-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics.js";
+      import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyBAM9mvMvKkRNBh2it7fetmnIh4VXxnpQI",
+        authDomain: "todo-2e2bf.firebaseapp.com",
+        projectId: "todo-2e2bf",
+        storageBucket: "todo-2e2bf.appspot.com",
+        messagingSenderId: "294428286250",
+        appId: "1:294428286250:web:75c5cfcb282faaafadd253",
+        measurementId: "G-CK8SPWDSBD"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const analytics = getAnalytics(app);
+      const db = getFirestore(app);
+
+      window.addEventListener('DOMContentLoaded', (event) => {
+          const addButton = document.getElementById('add-idea');
+          const titleInput = document.getElementById('idea-title');
+          const contentInput = document.getElementById('idea-content');
+          const ideaList = document.getElementById('idea-list');
+          const popup = document.getElementById('popup');
+          const popupOverlay = document.getElementById('popup-overlay');
+          const popupClose = document.getElementById('popup-close');
+          const popupTitle = document.getElementById('popup-title');
+          const popupContent = document.getElementById('popup-content');
+          const likeButton = document.getElementById('like-button');
+          const likeCount = document.getElementById('like-count');
+
+          let currentDocId = null;
+          let likedIdeas = new Set();  // To keep track of liked ideas
+
+          const ideaCollection = collection(db, "ideas");
+
+          onSnapshot(ideaCollection, (snapshot) => {
+              ideaList.innerHTML = '';
+              snapshot.forEach((doc) => {
+                  const ideaData = doc.data();
+                  addIdeaToUI(doc.id, ideaData.title, ideaData.content, ideaData.date, ideaData.likes || 0);
+              });
+          });
+
+          addButton.addEventListener('click', async () => {
+              const title = titleInput.value;
+              const content = contentInput.value;
+
+              if (title && content) {
+                  try {
+                      await addDoc(ideaCollection, {
+                          title: title,
+                          content: content,
+                          date: serverTimestamp(),
+                          likes: 0
+                      });
+
+                      titleInput.value = '';
+                      contentInput.value = '';
+                  } catch (e) {
+                      console.error("Error adding document: ", e);
+                  }
+              }
+          });
+
+          function addIdeaToUI(id, title, content, date, likes) {
+              const ideaCard = document.createElement('div');
+              ideaCard.className = 'idea-card';
+              ideaCard.innerHTML = `
+                  <h3>${title}</h3>
+                  <p>${content}</p>
+                  <div class="card-footer">
+                      <span>${new Date(date?.seconds * 1000).toLocaleDateString('ko-KR')}</span>
+                      <div class="like-button" id="like-button-${id}">
+                          <i class="fas fa-heart"></i>
+                          <span>${likes}</span>
+                      </div>
+                  </div>
+              `;
+              ideaCard.addEventListener('click', () => {
+                  currentDocId = id;
+                  popupTitle.textContent = title;
+                  popupContent.textContent = content;
+                  likeCount.textContent = likes;
+                  popup.style.display = 'block';
+                  popupOverlay.style.display = 'block';
+              });
+              ideaList.appendChild(ideaCard);
+          }
+
+          popupClose.addEventListener('click', () => {
+              popup.style.display = 'none';
+              popupOverlay.style.display = 'none';
+          });
+
+          likeButton.addEventListener('click', async () => {
+              if (currentDocId && !likedIdeas.has(currentDocId)) {
+                  const docRef = doc(db, "ideas", currentDocId);
+                  const docSnapshot = await getDoc(docRef);
+                  const newLikes = (docSnapshot.data().likes || 0) + 1;
+                  await updateDoc(docRef, { likes: newLikes });
+
+                  likedIdeas.add(currentDocId); // Mark this idea as liked
+                  popup.style.display = 'none';
+                  popupOverlay.style.display = 'none';
+              }
+          });
+      });
+    </script>
+</head>
+<body>
+    <h1>아이디어 공유</h1>
+    <div id="input-container">
+        <input type="text" id="idea-title" placeholder="제목" />
+        <textarea id="idea-content" placeholder="아이디어"></textarea>
+        <button id="add-idea">추가</button>
+    </div>
+    <div id="idea-list"></div>
+
+    <!-- 팝업 및 오버레이 -->
+    <div id="popup-overlay" class="popup-overlay"></div>
+    <div id="popup" class="popup">
+        <span id="popup-close" class="popup-close">&times;</span>
+        <h3 id="popup-title"></h3>
+        <p id="popup-content"></p>
+        <button id="like-button">
+            <i class="fas fa-heart"></i> <span id="like-count">0</span> 좋아요
+        </button>
+    </div>
+</body>
+</html>
